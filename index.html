@@ -234,6 +234,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
 
   <div class="today-grid">
     <div id="mainCol">
+
+      <!-- API KEY SETUP (hidden once key is saved) -->
       <div class="api-section" id="apiSection">
         <div class="api-label">&#10024; AI Plan Generation — One-time setup</div>
         <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:10px;">Enter your Anthropic API key to enable AI-generated daily plans.</div>
@@ -241,9 +243,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
           <input type="password" class="api-key-input" id="apiKeyInput" placeholder="sk-ant-..." />
           <button class="btn btn-gold" onclick="saveApiKey()">Save</button>
         </div>
-        <div class="ai-loading" id="aiLoading"><div class="spinner"></div>Building your plan from yesterday's review...</div>
+        <div class="ai-loading" id="aiLoading"><div class="spinner"></div>Building tomorrow's plan...</div>
       </div>
 
+      <!-- MORNING VIEW: see today's plan, check off, add tasks -->
       <div id="morningView">
         <div class="card">
           <div class="card-header">
@@ -259,7 +262,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
           </div>
           <div class="card-body">
             <div id="carriedBanner"></div>
-            <div class="task-list" id="taskList"><div class="empty-state">Save your API key and click Generate, or add tasks manually.</div></div>
+            <div class="task-list" id="taskList"><div class="empty-state">No plan yet. Do your evening review to generate tomorrow's plan, or add tasks manually below.</div></div>
             <div class="divider"></div>
             <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:8px;">Add a task</div>
             <div class="add-task-row">
@@ -278,6 +281,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
         </div>
       </div>
 
+      <!-- EVENING VIEW: review tasks, add tasks, generate tomorrow's plan -->
       <div id="eveningView" style="display:none;">
         <div class="review-section">
           <div class="review-header">
@@ -286,6 +290,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
           </div>
           <div class="review-body">
             <div class="task-list" id="reviewTaskList"></div>
+            <div class="divider"></div>
+            <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:8px;">Add a missed or late task</div>
+            <div class="add-task-row" style="margin-bottom:1rem;">
+              <input type="text" class="add-task-input" id="eveningTaskInput" placeholder="Something you did that wasn't on the list..." onkeydown="if(event.key==='Enter')addEveningTask()" />
+              <select class="add-task-select" id="eveningTaskTag">
+                <option value="genie">GENIE</option>
+                <option value="shamrck">Shamrck</option>
+                <option value="robin">Robin Harris</option>
+                <option value="civic">Civic</option>
+                <option value="personal">Personal</option>
+                <option value="outlier">Outlier</option>
+              </select>
+              <button class="btn btn-navy" onclick="addEveningTask()">Add</button>
+            </div>
             <div class="divider"></div>
             <div class="checkin-label">How did today feel?</div>
             <div class="mood-row">
@@ -297,14 +315,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
             <div class="checkin-label">Notes for tomorrow's plan — wins, blockers, priorities?</div>
             <textarea class="checkin-note" id="checkinNote" placeholder="The AI will use these notes when building tomorrow's plan..."></textarea>
             <div style="margin-top:12px;">
-              <button class="btn btn-teal" style="width:100%;" onclick="saveEveningReview()">Save review &amp; queue tomorrow's plan &rarr;</button>
+              <button class="btn btn-teal" style="width:100%;" onclick="saveEveningReview()">Save review &amp; generate tomorrow's plan &rarr;</button>
             </div>
           </div>
         </div>
       </div>
+
     </div>
 
+    <!-- SIDEBAR -->
     <div class="sidebar">
+
+      <!-- PROGRESS -->
       <div class="card">
         <div class="card-header"><div class="card-title">Today's progress</div></div>
         <div class="progress-section">
@@ -325,12 +347,23 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
         </div>
       </div>
 
-      <div class="card" id="morningControls">
-        <div class="card-header"><div class="card-title">Plan controls</div></div>
+      <!-- CALENDAR CARD -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Today's calendar</div>
+          <button onclick="loadCalendar()" style="background:none;border:none;font-size:12px;color:var(--text-muted);cursor:pointer;">&#8635; refresh</button>
+        </div>
+        <div class="card-body" id="calendarBody">
+          <div class="empty-state" style="padding:1rem;">Loading events...</div>
+        </div>
+      </div>
+
+      <!-- EVENING ONLY: generate + outliers -->
+      <div class="card" id="eveningControls" style="display:none;">
+        <div class="card-header"><div class="card-title">Tomorrow's plan</div></div>
         <div class="card-body">
-          <button class="btn btn-gold" style="width:100%;margin-bottom:10px;" onclick="generatePlan()">&#10024; Generate today's plan</button>
           <div id="apiKeyStatus" style="margin-bottom:10px;"></div>
-          <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:6px;">Add outliers</div>
+          <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:6px;">Today's outliers</div>
           <div id="outlierList" style="margin-bottom:8px;"></div>
           <div class="add-task-row">
             <input type="text" class="add-task-input" id="outlierInput" placeholder="Car repair, kiddo sick..." onkeydown="if(event.key==='Enter')addOutlier()" style="background:#FDF4E3;border-color:#F0C96A;" />
@@ -339,10 +372,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
         </div>
       </div>
 
+      <!-- YESTERDAY SUMMARY -->
       <div class="card" id="yesterdayCard" style="display:none;">
         <div class="card-header"><div class="card-title">Yesterday</div></div>
         <div class="card-body" id="yesterdayBody"></div>
       </div>
+
     </div>
   </div>
 </div>
@@ -572,6 +607,7 @@ async function init() {
     updateProgress();
     await loadYesterday();
     await checkPendingTomorrow();
+    loadCalendar();
   } catch(e) {
     setDbStatus('error');
     showToast('Database connection issue — check console');
@@ -595,16 +631,46 @@ function renderTasks() {
   list.innerHTML = filtered.map(t => `
     <div class="task-item ${t.done?'done':''} ${t.carried_from?'carried':''}" id="task-${t.id}">
       <div class="task-check" onclick="toggleTask('${t.id}',${!t.done})"><div class="task-check-inner"></div></div>
-      <div class="task-content">
-        <div class="task-text">${t.text}</div>
+      <div class="task-content" id="task-content-${t.id}">
+        <div class="task-text" id="task-text-${t.id}">${t.text}</div>
         <div class="task-meta">
           <span class="task-tag tag-${t.tag}">${tagLabel(t.tag)}</span>
           ${t.carried_from ? '<span class="task-tag tag-carried">carried over</span>' : ''}
         </div>
       </div>
-      <button class="task-remove" onclick="removeTask('${t.id}')">&times;</button>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <button class="task-remove" style="opacity:0.6;font-size:12px;padding:2px 6px;border:1px solid var(--gray-200);border-radius:4px;" onclick="editTask('${t.id}')">✎</button>
+        <button class="task-remove" onclick="removeTask('${t.id}')">&times;</button>
+      </div>
     </div>`).join('');
   updateProgress();
+}
+
+function editTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  const textEl = document.getElementById('task-text-' + id);
+  const current = t.text;
+  textEl.innerHTML = `<div style="display:flex;gap:6px;margin-top:2px;">
+    <input type="text" id="edit-input-${id}" value="${current.replace(/"/g, '&quot;')}" style="flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--gold);font-size:13px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);outline:none;" onkeydown="if(event.key==='Enter')saveEditTask('${id}');if(event.key==='Escape')renderTasks();" />
+    <button onclick="saveEditTask('${id}')" style="background:var(--teal);color:white;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>
+    <button onclick="renderTasks()" style="background:none;border:1px solid var(--gray-200);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancel</button>
+  </div>`;
+  document.getElementById('edit-input-' + id).focus();
+}
+
+async function saveEditTask(id) {
+  const input = document.getElementById('edit-input-' + id);
+  if (!input) return;
+  const newText = input.value.trim();
+  if (!newText) return;
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  t.text = newText;
+  renderTasks();
+  setSaving(true);
+  try { await db(`tasks?id=eq.${id}`, 'PATCH', { text: newText }); setSaving(false); showToast('Task updated'); }
+  catch(e) { showToast('Could not save edit'); setSaving(false); }
 }
 
 function renderReviewList() {
@@ -710,8 +776,67 @@ function setMode(mode) {
   document.getElementById('modeLabel').textContent = mode==='morning' ? 'Morning mode' : 'Evening review';
   document.getElementById('morningView').style.display = mode==='morning' ? 'block' : 'none';
   document.getElementById('eveningView').style.display = mode==='evening' ? 'block' : 'none';
-  document.getElementById('morningControls').style.display = mode==='morning' ? 'block' : 'none';
-  if (mode === 'evening') renderReviewList();
+  document.getElementById('eveningControls').style.display = mode==='evening' ? 'block' : 'none';
+  if (mode === 'evening') { renderReviewList(); renderApiKeyStatus(); }
+}
+
+async function addEveningTask() {
+  const input = document.getElementById('eveningTaskInput');
+  const tag = document.getElementById('eveningTaskTag').value;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  setSaving(true);
+  try {
+    const rows = await db('tasks', 'POST', { date: todayKey(), text, tag, done: true, carried_from: false });
+    if (rows && rows[0]) tasks.push(rows[0]);
+    renderReviewList();
+    updateProgress();
+    setSaving(false);
+    showToast('Task added and marked done');
+  } catch(e) { showToast('Could not save task'); setSaving(false); }
+}
+
+async function loadCalendar() {
+  const calBody = document.getElementById('calendarBody');
+  calBody.innerHTML = '<div class="empty-state" style="padding:0.5rem;">Loading...</div>';
+  try {
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
+    const rows = await db(`calendar_events?date=eq.${dateStr}&order=start_time.asc`);
+    if (!rows || !rows.length) {
+      calBody.innerHTML = renderCivicEvents();
+      return;
+    }
+    calBody.innerHTML = rows.map(e => renderCalEvent(e.title, e.start_time, e.end_time, e.location)).join('') + renderCivicEvents(true);
+  } catch(e) {
+    calBody.innerHTML = renderCivicEvents();
+  }
+}
+
+function renderCivicEvents(separator = false) {
+  const civic = getTodayCivicEvents();
+  if (!civic.length) return separator ? '' : '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:0.5rem;">No events today</div>';
+  const items = civic.map(ev => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-200);">
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--coral);flex-shrink:0;"></div>
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);">${ev}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Civic</div>
+      </div>
+    </div>`).join('');
+  return (separator ? '<div class="divider"></div>' : '') + items;
+}
+
+function renderCalEvent(title, start, end, location) {
+  const fmt = t => t ? new Date(t).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '';
+  return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-200);">
+    <div style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:5px;"></div>
+    <div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);">${title}</div>
+      <div style="font-size:11px;color:var(--text-muted);">${fmt(start)}${end ? ' – ' + fmt(end) : ''}${location ? ' · ' + location : ''}</div>
+    </div>
+  </div>`;
 }
 
 async function saveEveningReview() {
@@ -720,6 +845,7 @@ async function saveEveningReview() {
   const pct = total === 0 ? 0 : Math.round((done/total)*100);
   const note = document.getElementById('checkinNote').value.trim();
   const skipped = tasks.filter(t => !t.done && t.tag !== 'outlier').map(t => ({ text: t.text, tag: t.tag }));
+  const reviewData = { pct, done, total, mood: selectedMood||'😐', note, outliers: outliers.map(o=>o.text), skippedTasks: skipped };
 
   setSaving(true);
   try {
@@ -731,19 +857,27 @@ async function saveEveningReview() {
       skipped_tasks: skipped
     }, '?on_conflict=date');
 
-    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
-    await db('pending_tomorrow?id=eq.1', 'PATCH', {
-      date: tomorrow.toISOString().split('T')[0],
-      data: { pct, done, total, mood: selectedMood||'😐', note, outliers: outliers.map(o=>o.text), skippedTasks: skipped },
-      updated_at: new Date().toISOString()
-    });
-
     setSaving(false);
-    showToast('Review saved. Tomorrow\'s plan queued.');
+    showToast('Review saved. Generating tomorrow\'s plan...');
     document.getElementById('checkinNote').value = '';
     document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
     selectedMood = null;
-    setTimeout(() => setMode('morning'), 1500);
+    setMode('morning');
+
+    const apiKey = getApiKey();
+    if (apiKey) {
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+      tasks = [];
+      await buildAIPlan(apiKey, reviewData);
+    } else {
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+      await db('pending_tomorrow?id=eq.1', 'PATCH', {
+        date: tomorrow.toISOString().split('T')[0],
+        data: reviewData,
+        updated_at: new Date().toISOString()
+      });
+      showToast('Review saved. Add API key to generate tomorrow\'s plan.');
+    }
   } catch(e) { showToast('Could not save review'); setSaving(false); console.error(e); }
 }
 
@@ -846,7 +980,7 @@ Respond ONLY with a JSON array, no markdown, no explanation:
     tasks = inserted;
     renderTasks();
     updateProgress();
-    showToast(yesterdayData ? 'Plan built from yesterday\'s review' : 'Today\'s plan generated');
+    showToast(yesterdayData ? 'Tomorrow\'s plan built from your review' : 'Plan generated');
   } catch(e) { showToast('Could not generate plan — check API key'); console.error(e); }
 }
 
