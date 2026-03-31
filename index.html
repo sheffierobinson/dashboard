@@ -816,14 +816,16 @@ Respond ONLY with a JSON array, no markdown, no explanation:
 [{"text":"task description","tag":"genie|shamrck|robin|civic|personal","carriedFrom":false}]`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://udhfvwwscjhfewpxshzy.supabase.co/functions/v1/anthropic-proxy', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-anthropic-key': apiKey,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
         system: 'Return only valid JSON arrays. No markdown, no backticks, no explanation.',
-        messages: [{ role: 'user', content: prompt }]
+        prompt: prompt
       })
     });
     const data = await res.json();
