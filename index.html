@@ -1,1 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src *; font-src *;">
+<title>Sheffie Robinson — Daily Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #1B2A4A;
+  --navy-light: #243558;
+  --gold: #C9922A;
+  --gold-light: #F0C96A;
+  --gold-pale: #FDF4E3;
+  --teal: #1D9E75;
+  --teal-light: #E1F5EE;
+  --purple: #534AB7;
+  --purple-light: #EEEDFE;
+  --coral: #D85A30;
+  --coral-light: #FAECE7;
+  --blue: #185FA5;
+  --blue-light: #E6F1FB;
+  --gray-100: #F7F6F3;
+  --gray-200: #EDEBE5;
+  --gray-400: #9E9C95;
+  --white: #FFFFFF;
+  --text: #1B2A4A;
+  --text-muted: #6B7280;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: var(--text); min-height: 100vh; font-size: 15px; }
 
+.header { background: var(--navy); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+.header-brand { display: flex; flex-direction: column; }
+.header-name { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--white); }
+.header-sub { font-size: 11px; color: var(--gold-light); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 300; }
+.db-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.5); }
+.db-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gray-400); }
+.db-dot.connected { background: #4ADE80; }
+.db-dot.error { background: var(--coral); }
+.tab-nav { display: flex; gap: 4px; background: rgba(255,255,255,0.08); border-radius: var(--radius-sm); padding: 4px; }
+.tab-btn { background: none; border: none; color: rgba(255,255,255,0.5); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+.tab-btn.active { background: var(--gold); color: var(--navy); }
+.tab-btn:hover:not(.active) { color: var(--white); background: rgba(255,255,255,0.1); }
+
+.page { display: none; padding: 1.5rem 2rem; max-width: 1120px; margin: 0 auto; }
+.page.active { display: block; }
+
+.card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-200); overflow: hidden; box-shadow: var(--shadow); }
+.card-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--navy); }
+.card-body { padding: 1.25rem; }
+
+.today-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.25rem; align-items: start; }
+.sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+.mode-banner { border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.mode-banner.morning { background: linear-gradient(135deg, #1B2A4A 0%, #243558 100%); }
+.mode-banner.evening { background: linear-gradient(135deg, #1D6B50 0%, #0F6E56 100%); }
+.mode-text { color: var(--white); }
+.mode-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+.mode-title { font-family: 'DM Serif Display', serif; font-size: 20px; }
+.mode-sub { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 2px; line-height: 1.4; }
+.mode-toggle { display: flex; gap: 8px; flex-shrink: 0; }
+.mode-btn { padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.mode-btn:hover { background: rgba(255,255,255,0.2); }
+.mode-btn.active { background: var(--gold); border-color: var(--gold); color: var(--navy); }
+
+.task-list { display: flex; flex-direction: column; gap: 6px; }
+.task-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--gray-200); background: var(--gray-100); transition: all 0.15s; }
+.task-item:hover { border-color: var(--gold); }
+.task-item.done { background: #F0FBF6; border-color: #9FE1CB; }
+.task-item.done .task-text { text-decoration: line-through; color: var(--text-muted); }
+.task-item.carried { background: #FFF3F0; border-color: #F5C4B3; }
+.task-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--gray-400); background: var(--white); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; margin-top: 1px; }
+.task-check:hover { border-color: var(--teal); }
+.task-item.done .task-check { background: var(--teal); border-color: var(--teal); }
+.task-check-inner { width: 8px; height: 8px; border-radius: 50%; background: white; display: none; }
+.task-item.done .task-check-inner { display: block; }
+.task-content { flex: 1; min-width: 0; }
+.task-text { font-size: 14px; color: var(--text); line-height: 1.4; }
+.task-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.task-tag { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; letter-spacing: 0.03em; }
+.tag-genie { background: var(--blue-light); color: var(--blue); }
+.tag-shamrck { background: var(--purple-light); color: var(--purple); }
+.tag-robin { background: var(--teal-light); color: var(--teal); }
+.tag-civic { background: var(--coral-light); color: var(--coral); }
+.tag-personal { background: #FDF4E3; color: var(--gold); }
+.tag-outlier { background: #F3F4F6; color: #6B7280; }
+.tag-carried { background: #FAECE7; color: #993C1D; font-size: 9px; }
+.task-remove { background: none; border: none; color: var(--gray-400); cursor: pointer; font-size: 16px; padding: 0 2px; opacity: 0; transition: opacity 0.15s; line-height: 1; }
+.task-item:hover .task-remove { opacity: 1; }
+.task-remove:hover { color: var(--coral); }
+
+.add-task-row { display: flex; gap: 8px; margin-top: 12px; }
+.add-task-input { flex: 1; padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--gray-200); font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--gray-100); color: var(--text); outline: none; transition: border-color 0.15s; }
+.add-task-input:focus { border-color: var(--gold); background: var(--white); }
+.add-task-select { padding: 9px 10px; border-radius: var(--radius-sm); border: 1px solid var(--gray-200); font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--gray-100); color: var(--text); outline: none; cursor: pointer; }
+
+.btn { padding: 9px 16px; border-radius: var(--radius-sm); border: none; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.btn-gold { background: var(--gold); color: var(--white); }
+.btn-gold:hover { background: #B57E20; }
+.btn-outline { background: none; border: 1px solid var(--gray-200); color: var(--text); }
+.btn-outline:hover { border-color: var(--navy); }
+.btn-navy { background: var(--navy); color: var(--white); }
+.btn-navy:hover { background: var(--navy-light); }
+.btn-teal { background: var(--teal); color: var(--white); }
+.btn-teal:hover { background: #0F6E56; }
+
+.progress-section { text-align: center; padding: 1.25rem; }
+.ring-wrap { position: relative; width: 100px; height: 100px; margin: 0 auto 0.75rem; }
+.ring-wrap svg { transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--gray-200); stroke-width: 8; }
+.ring-fill { fill: none; stroke: var(--teal); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+.ring-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+.ring-pct { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--navy); display: block; line-height: 1; }
+.ring-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.05em; }
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 1rem; }
+.stat-card { background: var(--gray-100); border-radius: var(--radius-sm); padding: 10px; text-align: center; }
+.stat-num { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--navy); }
+.stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.outlier-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: var(--gold-pale); border-radius: var(--radius-sm); border: 1px solid #F0C96A; font-size: 13px; color: #854F0B; margin-bottom: 6px; }
+.outlier-remove { background: none; border: none; color: #C9922A; cursor: pointer; font-size: 14px; }
+
+.review-section { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-200); overflow: hidden; box-shadow: var(--shadow); }
+.review-header { background: linear-gradient(135deg, #1D6B50 0%, #0F6E56 100%); padding: 1rem 1.25rem; }
+.review-header-title { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--white); }
+.review-header-sub { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+.review-body { padding: 1.25rem; }
+.mood-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.mood-btn { flex: 1; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--gray-200); background: var(--gray-100); cursor: pointer; font-size: 18px; text-align: center; transition: all 0.15s; }
+.mood-btn:hover, .mood-btn.selected { border-color: var(--gold); background: var(--gold-pale); }
+.checkin-label { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; margin-top: 10px; }
+.checkin-note { width: 100%; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--gray-200); font-family: 'DM Sans', sans-serif; font-size: 13px; resize: none; height: 70px; background: var(--gray-100); color: var(--text); outline: none; }
+.checkin-note:focus { border-color: var(--gold); background: var(--white); }
+
+.api-section { background: linear-gradient(135deg, var(--navy) 0%, #2A3F6B 100%); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
+.api-label { font-size: 11px; color: var(--gold-light); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px; }
+.api-key-row { display: flex; gap: 8px; }
+.api-key-input { flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; }
+.api-key-input::placeholder { color: rgba(255,255,255,0.4); }
+.api-key-input:focus { border-color: var(--gold); }
+.ai-loading { display: none; align-items: center; gap: 8px; font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 10px; }
+.ai-loading.show { display: flex; }
+.spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--gold-light); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 1.5rem; }
+.week-day-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-200); padding: 12px 10px; text-align: center; box-shadow: var(--shadow); }
+.week-day-card.today { border: 2px solid var(--gold); }
+.week-day-name { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.week-day-num { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--navy); margin-bottom: 8px; }
+.week-bar-wrap { height: 48px; background: var(--gray-100); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+.week-bar { background: var(--teal); border-radius: 4px; transition: height 0.4s ease; min-height: 3px; }
+.week-pct { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+.goal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+.goal-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-200); padding: 1.25rem; box-shadow: var(--shadow); }
+.goal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.goal-name { font-size: 14px; font-weight: 500; color: var(--navy); line-height: 1.3; }
+.goal-badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.goal-bar { height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.goal-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.goal-detail { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+
+.history-item { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-200); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 8px; box-shadow: var(--shadow); }
+.history-date-block { text-align: center; min-width: 40px; }
+.history-date-num { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--navy); line-height: 1; }
+.history-date-mon { font-size: 11px; color: var(--text-muted); }
+.history-bar { flex: 1; height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden; }
+.history-fill { height: 100%; background: var(--teal); border-radius: 4px; }
+
+.carried-banner { background: #FFF3F0; border: 1px solid #F5C4B3; border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: #993C1D; }
+.divider { height: 1px; background: var(--gray-200); margin: 1rem 0; }
+.empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+.section-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--navy); margin-bottom: 1rem; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.section-sub { font-size: 13px; color: var(--text-muted); }
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: var(--white); padding: 10px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; opacity: 0; transform: translateY(8px); transition: all 0.2s; z-index: 999; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.saving-indicator { font-size: 11px; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 4px; }
+.saving-indicator.active { color: var(--gold-light); }
+
+@media (max-width: 768px) {
+  .today-grid { grid-template-columns: 1fr; }
+  .week-grid { grid-template-columns: repeat(4, 1fr); }
+  .header { padding: 0 1rem; flex-wrap: wrap; height: auto; padding: 12px 1rem; gap: 8px; }
+  .page { padding: 1rem; }
+  .tab-btn { padding: 6px 8px; font-size: 11px; }
+  .mode-toggle { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="header-name">Sheffie Robinson</div>
+    <div class="header-sub">Daily Command Center</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="showPage('today',this)">Today</button>
+      <button class="tab-btn" onclick="showPage('weekly',this)">Weekly</button>
+      <button class="tab-btn" onclick="showPage('goals',this)">Goals</button>
+      <button class="tab-btn" onclick="showPage('history',this)">History</button>
+    </div>
+    <div class="db-status">
+      <div class="db-dot" id="dbDot"></div>
+      <span id="dbLabel">connecting...</span>
+    </div>
+    <div class="saving-indicator" id="savingIndicator">saving...</div>
+  </div>
+</div>
+
+<!-- TODAY PAGE -->
+<div class="page active" id="page-today">
+  <div class="mode-banner morning" id="modeBanner">
+    <div class="mode-text">
+      <div class="mode-label" id="modeLabel">Morning mode</div>
+      <div class="mode-title" id="modeTitle">Good morning, Sheffie</div>
+      <div class="mode-sub" id="modeSub">Loading your day...</div>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btnMorning" onclick="setMode('morning')">&#9728; Morning</button>
+      <button class="mode-btn" id="btnEvening" onclick="setMode('evening')">&#9790; Evening review</button>
+    </div>
+  </div>
+
+  <div class="today-grid">
+    <div id="mainCol">
+      <div class="api-section" id="apiSection">
+        <div class="api-label">&#10024; AI Plan Generation — One-time setup</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:10px;">Enter your Anthropic API key to enable AI-generated daily plans.</div>
+        <div class="api-key-row">
+          <input type="password" class="api-key-input" id="apiKeyInput" placeholder="sk-ant-..." />
+          <button class="btn btn-gold" onclick="saveApiKey()">Save</button>
+        </div>
+        <div class="ai-loading" id="aiLoading"><div class="spinner"></div>Building your plan from yesterday's review...</div>
+      </div>
+
+      <div id="morningView">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Today's plan</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button onclick="filterTasks('all')" class="task-btn btn btn-outline" style="font-size:11px;padding:4px 10px;">All</button>
+              <button onclick="filterTasks('genie')" class="task-btn btn btn-outline tag-genie" style="font-size:11px;padding:4px 10px;">GENIE</button>
+              <button onclick="filterTasks('shamrck')" class="task-btn btn btn-outline tag-shamrck" style="font-size:11px;padding:4px 10px;">Shamrck</button>
+              <button onclick="filterTasks('robin')" class="task-btn btn btn-outline tag-robin" style="font-size:11px;padding:4px 10px;">Robin Harris</button>
+              <button onclick="filterTasks('civic')" class="task-btn btn btn-outline tag-civic" style="font-size:11px;padding:4px 10px;">Civic</button>
+              <button onclick="filterTasks('personal')" class="task-btn btn btn-outline tag-personal" style="font-size:11px;padding:4px 10px;">Personal</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="carriedBanner"></div>
+            <div class="task-list" id="taskList"><div class="empty-state">Save your API key and click Generate, or add tasks manually.</div></div>
+            <div class="divider"></div>
+            <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:8px;">Add a task</div>
+            <div class="add-task-row">
+              <input type="text" class="add-task-input" id="newTaskInput" placeholder="Add something for today..." onkeydown="if(event.key==='Enter')addTask()" />
+              <select class="add-task-select" id="newTaskTag">
+                <option value="genie">GENIE</option>
+                <option value="shamrck">Shamrck</option>
+                <option value="robin">Robin Harris</option>
+                <option value="civic">Civic</option>
+                <option value="personal">Personal</option>
+                <option value="outlier">Outlier</option>
+              </select>
+              <button class="btn btn-navy" onclick="addTask()">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="eveningView" style="display:none;">
+        <div class="review-section">
+          <div class="review-header">
+            <div class="review-header-title">Evening review</div>
+            <div class="review-header-sub">Check off what you completed. Unfinished tasks carry forward to tomorrow.</div>
+          </div>
+          <div class="review-body">
+            <div class="task-list" id="reviewTaskList"></div>
+            <div class="divider"></div>
+            <div class="checkin-label">How did today feel?</div>
+            <div class="mood-row">
+              <button class="mood-btn" data-mood="😤" onclick="selectMood(this)">😤</button>
+              <button class="mood-btn" data-mood="😐" onclick="selectMood(this)">😐</button>
+              <button class="mood-btn" data-mood="🙂" onclick="selectMood(this)">🙂</button>
+              <button class="mood-btn" data-mood="🔥" onclick="selectMood(this)">🔥</button>
+            </div>
+            <div class="checkin-label">Notes for tomorrow's plan — wins, blockers, priorities?</div>
+            <textarea class="checkin-note" id="checkinNote" placeholder="The AI will use these notes when building tomorrow's plan..."></textarea>
+            <div style="margin-top:12px;">
+              <button class="btn btn-teal" style="width:100%;" onclick="saveEveningReview()">Save review &amp; queue tomorrow's plan &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Today's progress</div></div>
+        <div class="progress-section">
+          <div class="ring-wrap">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle class="ring-bg" cx="50" cy="50" r="42"/>
+              <circle class="ring-fill" id="ringFill" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"/>
+            </svg>
+            <div class="ring-text">
+              <span class="ring-pct" id="ringPct">0%</span>
+              <span class="ring-label">done</span>
+            </div>
+          </div>
+          <div class="stats-row">
+            <div class="stat-card"><div class="stat-num" id="statDone" style="color:var(--teal)">0</div><div class="stat-lbl">completed</div></div>
+            <div class="stat-card"><div class="stat-num" id="statLeft">0</div><div class="stat-lbl">remaining</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="morningControls">
+        <div class="card-header"><div class="card-title">Plan controls</div></div>
+        <div class="card-body">
+          <button class="btn btn-gold" style="width:100%;margin-bottom:10px;" onclick="generatePlan()">&#10024; Generate today's plan</button>
+          <div id="apiKeyStatus" style="margin-bottom:10px;"></div>
+          <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:6px;">Add outliers</div>
+          <div id="outlierList" style="margin-bottom:8px;"></div>
+          <div class="add-task-row">
+            <input type="text" class="add-task-input" id="outlierInput" placeholder="Car repair, kiddo sick..." onkeydown="if(event.key==='Enter')addOutlier()" style="background:#FDF4E3;border-color:#F0C96A;" />
+            <button class="btn btn-gold" onclick="addOutlier()">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="yesterdayCard" style="display:none;">
+        <div class="card-header"><div class="card-title">Yesterday</div></div>
+        <div class="card-body" id="yesterdayBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WEEKLY PAGE -->
+<div class="page" id="page-weekly">
+  <div class="section-header">
+    <div class="section-title">This week</div>
+    <div class="section-sub" id="weekRange"></div>
+  </div>
+  <div class="week-grid" id="weekGrid"></div>
+  <div class="section-title">Focus balance</div>
+  <div class="card"><div class="card-body" id="weekBalance"></div></div>
+</div>
+
+<!-- GOALS PAGE -->
+<div class="page" id="page-goals">
+  <div class="section-header">
+    <div class="section-title">Goal tracker</div>
+    <div class="section-sub">April 2026 operating plan</div>
+  </div>
+  <div class="goal-grid" id="goalGrid"></div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div class="page" id="page-history">
+  <div class="section-header">
+    <div class="section-title">History</div>
+    <div class="section-sub" id="historyCount"></div>
+  </div>
+  <div id="historyList"><div class="empty-state">No history yet. Complete your first evening review.</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://udhfvwwscjhfewpxshzy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkaGZ2d3dzY2poZmV3cHhzaHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NDAyNDAsImV4cCI6MjA5MDQxNjI0MH0.NzJ0YoFWg5IXyRwxPGEv4hh4ZyeyxkxvMOJC_eHwG8U';
+const APIKEY_STORE = 'sheffie_apikey';
+
+const GOALS_DEF = [
+  { id: 'wasc', name: 'Pay WASC fee ($1,100)', cat: 'shamrck', target: 1100, unit: '$', color: '#534AB7', bg: '#EEEDFE' },
+  { id: 'customers', name: 'Anchor business customers', cat: 'shamrck', target: 3, unit: 'customers', color: '#534AB7', bg: '#EEEDFE' },
+  { id: 'suitestack', name: 'SuiteDash stabilization', cat: 'shamrck', target: 100, unit: '%', color: '#534AB7', bg: '#EEEDFE' },
+  { id: 'linkedin', name: 'LinkedIn posts this week', cat: 'personal', target: 2, unit: 'posts', color: '#C9922A', bg: '#FDF4E3' },
+  { id: 'genie_community', name: 'GENIE community build', cat: 'genie', target: 100, unit: '%', color: '#185FA5', bg: '#E6F1FB' },
+  { id: 'nsf', name: 'NSF Phase II prep', cat: 'shamrck', target: 100, unit: '%', color: '#534AB7', bg: '#EEEDFE' },
+  { id: 'robin', name: 'Property analyses completed', cat: 'robin', target: 5, unit: 'properties', color: '#1D9E75', bg: '#E1F5EE' },
+  { id: 'gym', name: 'Gym sessions this month', cat: 'personal', target: 12, unit: 'sessions', color: '#C9922A', bg: '#FDF4E3' },
+];
+
+const DAY_CTX = {
+  0: 'Sunday. Church 10:30am, done by 1pm. Protected afternoon — rest or light Shamrck strategy.',
+  1: 'Monday. Strong start to the week. Georgia Southern primary. Good day for a LinkedIn touchpoint.',
+  2: 'Tuesday. Deep work day. Ideal for GENIE community build or Shamrck SuiteDash progress.',
+  3: 'Wednesday. Mid-week. Good for stakeholder outreach and incubator check-ins.',
+  4: 'Thursday. Check for Democratic Party or NCNW meeting tonight. Front-load your work.',
+  5: 'Friday. Wrap the week. Self-Driving Monologue content day. Set up for the weekend.',
+  6: 'Saturday. Check Neighborhood Alliance/T.W. Josey schedule. Shamrck strategy and Robin Harris analysis.',
+};
+
+let tasks = [];
+let outliers = [];
+let goalProgress = {};
+let selectedMood = null;
+let currentFilter = 'all';
+let currentMode = 'morning';
+let dbConnected = false;
+
+async function db(path, method = 'GET', body = null, extra = '') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}${extra}`, {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : (method === 'PATCH' ? 'return=representation' : ''),
+    },
+    body: body ? JSON.stringify(body) : null
+  });
+  if (!res.ok) { const err = await res.text(); throw new Error(err); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+function todayKey() { return new Date().toISOString().split('T')[0]; }
+function yesterdayKey() { const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().split('T')[0]; }
+
+function getWeekNumber(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), 1);
+  let count = 0;
+  const target = date.getDay();
+  const temp = new Date(d);
+  while (temp <= date) { if (temp.getDay() === target) count++; temp.setDate(temp.getDate()+1); }
+  return count;
+}
+
+function getTodayCivicEvents() {
+  const today = new Date();
+  const dow = today.getDay();
+  const wn = getWeekNumber(today);
+  const ev = [];
+  if (dow === 0) ev.push('Church 10:30am');
+  if (dow === 1 && wn === 4) ev.push('NAACP 6pm (virtual)');
+  if (dow === 4 && wn === 2) ev.push('Democratic Party 7pm');
+  if (dow === 4 && wn === 3) ev.push('NCNW 6pm (in person)');
+  if (dow === 6 && wn === 1) ev.push('Neighborhood Alliance 9am');
+  if (dow === 6 && (wn === 2 || wn === 4)) ev.push('T.W. Josey Foundation 10am');
+  return ev;
+}
+
+function setDbStatus(status) {
+  const dot = document.getElementById('dbDot');
+  const label = document.getElementById('dbLabel');
+  dot.className = 'db-dot ' + status;
+  label.textContent = status === 'connected' ? 'Supabase connected' : status === 'error' ? 'DB error' : 'connecting...';
+  dbConnected = status === 'connected';
+}
+
+function setSaving(active) {
+  const el = document.getElementById('savingIndicator');
+  el.textContent = active ? 'saving...' : 'saved';
+  el.className = 'saving-indicator' + (active ? ' active' : '');
+  if (!active) setTimeout(() => { el.textContent = ''; }, 2000);
+}
+
+function getApiKey() { return localStorage.getItem(APIKEY_STORE) || ''; }
+
+function renderApiKeyStatus() {
+  const key = getApiKey();
+  const el = document.getElementById('apiKeyStatus');
+  if (!el) return;
+  if (key) {
+    el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--teal-light);border:1px solid #9FE1CB;border-radius:var(--radius-sm);padding:7px 10px;">
+      <span style="font-size:12px;color:var(--teal);">&#10003; API key saved</span>
+      <button onclick="clearApiKey()" style="background:none;border:none;font-size:11px;color:var(--teal);cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;">Update</button>
+    </div>`;
+  } else {
+    el.innerHTML = `<div style="background:#FFF3F0;border:1px solid #F5C4B3;border-radius:var(--radius-sm);padding:7px 10px;font-size:12px;color:var(--coral);">&#9888; No API key — enter one below</div>`;
+    document.getElementById('apiSection').style.display = 'block';
+  }
+}
+
+function clearApiKey() {
+  localStorage.removeItem(APIKEY_STORE);
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiSection').style.display = 'block';
+  renderApiKeyStatus();
+  showToast('Enter your new API key above');
+}
+
+function saveApiKey() {
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if (v && v.startsWith('sk-')) {
+    localStorage.setItem(APIKEY_STORE, v);
+    document.getElementById('apiKeyInput').value = '••••••••••••••••••';
+    document.getElementById('apiSection').style.display = 'none';
+    renderApiKeyStatus();
+    showToast('API key saved');
+  } else { showToast('Enter a valid key starting with sk-'); }
+}
+
+async function loadTodayTasks() {
+  const rows = await db(`tasks?date=eq.${todayKey()}&order=created_at.asc`);
+  tasks = rows || [];
+}
+
+async function loadOutliers() {
+  const rows = await db(`outliers?date=eq.${todayKey()}`);
+  outliers = rows || [];
+}
+
+async function loadGoals() {
+  const rows = await db('goals');
+  goalProgress = {};
+  (rows || []).forEach(r => { goalProgress[r.id] = r.progress; });
+}
+
+async function loadYesterday() {
+  try {
+    const rows = await db(`checkins?date=eq.${yesterdayKey()}`);
+    if (!rows || !rows.length) return;
+    const c = rows[0];
+    document.getElementById('yesterdayCard').style.display = 'block';
+    const bar = `<div style="height:6px;background:var(--gray-200);border-radius:3px;overflow:hidden;margin:6px 0;"><div style="height:100%;width:${c.pct}%;background:var(--teal);border-radius:3px;"></div></div>`;
+    document.getElementById('yesterdayBody').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:13px;font-weight:500;">${c.done}/${c.total} tasks</span>
+        <span style="font-size:18px;">${c.mood}</span>
+      </div>${bar}
+      ${c.note ? `<div style="font-size:12px;color:var(--text-muted);font-style:italic;margin-top:4px;">"${c.note.substring(0,120)}${c.note.length>120?'...':''}"</div>` : ''}
+      ${c.skipped_tasks && c.skipped_tasks.length ? `<div style="font-size:12px;color:var(--coral);margin-top:6px;">&#8593; ${c.skipped_tasks.length} task${c.skipped_tasks.length>1?'s':''} carried to today</div>` : ''}`;
+  } catch(e) {}
+}
+
+async function checkPendingTomorrow() {
+  try {
+    const rows = await db('pending_tomorrow?id=eq.1');
+    if (!rows || !rows.length || !rows[0].date) return;
+    const pending = rows[0];
+    if (pending.date === todayKey() && tasks.length === 0) {
+      await generatePlanFromReview(pending.data);
+      await db('pending_tomorrow?id=eq.1', 'PATCH', { date: null, data: null });
+    }
+  } catch(e) {}
+}
+
+async function init() {
+  const h = new Date().getHours();
+  document.getElementById('modeTitle').textContent = (h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening') + ', Sheffie';
+  document.getElementById('headerDate') && (document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }));
+
+  const civic = getTodayCivicEvents();
+  const ctx = DAY_CTX[new Date().getDay()];
+  document.getElementById('modeSub').textContent = civic.length ? ctx + ' | ' + civic.join(', ') : ctx;
+
+  if (getApiKey()) document.getElementById('apiSection').style.display = 'none';
+  renderApiKeyStatus();
+
+  try {
+    await loadTodayTasks();
+    await loadOutliers();
+    await loadGoals();
+    setDbStatus('connected');
+    renderTasks();
+    renderOutliers();
+    updateProgress();
+    await loadYesterday();
+    await checkPendingTomorrow();
+  } catch(e) {
+    setDbStatus('error');
+    showToast('Database connection issue — check console');
+    console.error(e);
+  }
+}
+
+function tagLabel(tag) {
+  return { genie:'GENIE', shamrck:'Shamrck', robin:'Robin Harris', civic:'Civic', personal:'Personal', outlier:'Outlier' }[tag] || tag;
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  const carried = tasks.filter(t => t.carried_from);
+  document.getElementById('carriedBanner').innerHTML = carried.length
+    ? `<div class="carried-banner">&#8593; ${carried.length} task${carried.length>1?'s':''} carried over from yesterday</div>` : '';
+
+  const filtered = currentFilter === 'all' ? tasks : tasks.filter(t => t.tag === currentFilter);
+  if (!filtered.length) { list.innerHTML = '<div class="empty-state">No tasks yet. Generate a plan or add tasks manually.</div>'; updateProgress(); return; }
+
+  list.innerHTML = filtered.map(t => `
+    <div class="task-item ${t.done?'done':''} ${t.carried_from?'carried':''}" id="task-${t.id}">
+      <div class="task-check" onclick="toggleTask('${t.id}',${!t.done})"><div class="task-check-inner"></div></div>
+      <div class="task-content">
+        <div class="task-text">${t.text}</div>
+        <div class="task-meta">
+          <span class="task-tag tag-${t.tag}">${tagLabel(t.tag)}</span>
+          ${t.carried_from ? '<span class="task-tag tag-carried">carried over</span>' : ''}
+        </div>
+      </div>
+      <button class="task-remove" onclick="removeTask('${t.id}')">&times;</button>
+    </div>`).join('');
+  updateProgress();
+}
+
+function renderReviewList() {
+  const list = document.getElementById('reviewTaskList');
+  if (!tasks.length) { list.innerHTML = '<div class="empty-state">No tasks planned for today.</div>'; return; }
+  list.innerHTML = tasks.map(t => `
+    <div class="task-item ${t.done?'done':''}" id="rev-${t.id}">
+      <div class="task-check" onclick="toggleTask('${t.id}',${!t.done}); setTimeout(renderReviewList,200)"><div class="task-check-inner"></div></div>
+      <div class="task-content">
+        <div class="task-text">${t.text}</div>
+        <div class="task-meta">
+          <span class="task-tag tag-${t.tag}">${tagLabel(t.tag)}</span>
+          ${t.done ? '<span style="font-size:11px;color:var(--teal)">&#10003; done</span>' : '<span style="font-size:11px;color:var(--gold)">&#8594; carries forward</span>'}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleTask(id, done) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  t.done = done;
+  renderTasks();
+  updateProgress();
+  setSaving(true);
+  try { await db(`tasks?id=eq.${id}`, 'PATCH', { done }); setSaving(false); }
+  catch(e) { showToast('Save failed'); setSaving(false); }
+}
+
+async function removeTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  renderTasks();
+  try { await db(`tasks?id=eq.${id}`, 'DELETE'); } catch(e) {}
+}
+
+async function addTask() {
+  const input = document.getElementById('newTaskInput');
+  const tag = document.getElementById('newTaskTag').value;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  setSaving(true);
+  try {
+    const rows = await db('tasks', 'POST', { date: todayKey(), text, tag, done: false, carried_from: false });
+    if (rows && rows[0]) tasks.push(rows[0]);
+    renderTasks();
+    setSaving(false);
+    showToast('Task added');
+  } catch(e) { showToast('Could not save task'); setSaving(false); }
+}
+
+async function addOutlier() {
+  const input = document.getElementById('outlierInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  try {
+    const rows = await db('outliers', 'POST', { date: todayKey(), text });
+    if (rows && rows[0]) outliers.push(rows[0]);
+    renderOutliers();
+    showToast('Outlier noted');
+  } catch(e) { showToast('Could not save outlier'); }
+}
+
+async function removeOutlier(id) {
+  outliers = outliers.filter(o => o.id !== id);
+  renderOutliers();
+  try { await db(`outliers?id=eq.${id}`, 'DELETE'); } catch(e) {}
+}
+
+function renderOutliers() {
+  const list = document.getElementById('outlierList');
+  list.innerHTML = outliers.map(o => `
+    <div class="outlier-item">
+      <span>&#9888; ${o.text}</span>
+      <button class="outlier-remove" onclick="removeOutlier('${o.id}')">&times;</button>
+    </div>`).join('');
+}
+
+function filterTasks(f) { currentFilter = f; renderTasks(); }
+
+function updateProgress() {
+  const total = tasks.length;
+  const done = tasks.filter(t => t.done).length;
+  const pct = total === 0 ? 0 : Math.round((done/total)*100);
+  document.getElementById('ringPct').textContent = pct + '%';
+  document.getElementById('ringFill').style.strokeDashoffset = 263.9 - (263.9 * pct / 100);
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statLeft').textContent = total - done;
+}
+
+function selectMood(btn) {
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedMood = btn.dataset.mood;
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btnMorning').classList.toggle('active', mode==='morning');
+  document.getElementById('btnEvening').classList.toggle('active', mode==='evening');
+  document.getElementById('modeBanner').className = 'mode-banner ' + mode;
+  document.getElementById('modeLabel').textContent = mode==='morning' ? 'Morning mode' : 'Evening review';
+  document.getElementById('morningView').style.display = mode==='morning' ? 'block' : 'none';
+  document.getElementById('eveningView').style.display = mode==='evening' ? 'block' : 'none';
+  document.getElementById('morningControls').style.display = mode==='morning' ? 'block' : 'none';
+  if (mode === 'evening') renderReviewList();
+}
+
+async function saveEveningReview() {
+  const done = tasks.filter(t => t.done).length;
+  const total = tasks.length;
+  const pct = total === 0 ? 0 : Math.round((done/total)*100);
+  const note = document.getElementById('checkinNote').value.trim();
+  const skipped = tasks.filter(t => !t.done && t.tag !== 'outlier').map(t => ({ text: t.text, tag: t.tag }));
+
+  setSaving(true);
+  try {
+    await db('checkins', 'POST', {
+      date: todayKey(), pct, done, total,
+      mood: selectedMood || '😐', note,
+      outliers: outliers.map(o => o.text),
+      completed_tasks: tasks.filter(t => t.done).map(t => t.text),
+      skipped_tasks: skipped
+    }, '?on_conflict=date');
+
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+    await db('pending_tomorrow?id=eq.1', 'PATCH', {
+      date: tomorrow.toISOString().split('T')[0],
+      data: { pct, done, total, mood: selectedMood||'😐', note, outliers: outliers.map(o=>o.text), skippedTasks: skipped },
+      updated_at: new Date().toISOString()
+    });
+
+    setSaving(false);
+    showToast('Review saved. Tomorrow\'s plan queued.');
+    document.getElementById('checkinNote').value = '';
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    selectedMood = null;
+    setTimeout(() => setMode('morning'), 1500);
+  } catch(e) { showToast('Could not save review'); setSaving(false); console.error(e); }
+}
+
+async function generatePlan() {
+  const apiKey = getApiKey();
+  if (!apiKey) { showToast('Add your Anthropic API key first'); return; }
+  const loading = document.getElementById('aiLoading');
+  document.getElementById('apiSection').style.display = 'flex';
+  loading.classList.add('show');
+  try {
+    const rows = await db(`checkins?date=eq.${yesterdayKey()}`);
+    const yesterday = rows && rows[0] ? rows[0] : null;
+    await buildAIPlan(apiKey, yesterday ? {
+      pct: yesterday.pct, done: yesterday.done, total: yesterday.total,
+      mood: yesterday.mood, note: yesterday.note,
+      outliers: yesterday.outliers, skippedTasks: yesterday.skipped_tasks
+    } : null);
+  } catch(e) { showToast('Could not load yesterday data'); }
+  loading.classList.remove('show');
+  document.getElementById('apiSection').style.display = 'none';
+}
+
+async function generatePlanFromReview(reviewData) {
+  const apiKey = getApiKey();
+  if (!apiKey) return;
+  const loading = document.getElementById('aiLoading');
+  document.getElementById('apiSection').style.display = 'flex';
+  loading.classList.add('show');
+  await buildAIPlan(apiKey, reviewData);
+  loading.classList.remove('show');
+  document.getElementById('apiSection').style.display = 'none';
+}
+
+async function buildAIPlan(apiKey, yesterdayData) {
+  const today = new Date();
+  const civic = getTodayCivicEvents();
+  const outlierTxt = outliers.length ? outliers.map(o => o.text).join(', ') : 'None';
+
+  let yesterdaySummary = 'No data from yesterday.';
+  if (yesterdayData) {
+    yesterdaySummary = `Yesterday: completed ${yesterdayData.done||0}/${yesterdayData.total||0} tasks (${yesterdayData.pct||0}%). Mood: ${yesterdayData.mood||'😐'}.`;
+    if (yesterdayData.note) yesterdaySummary += ` Notes from Sheffie: "${yesterdayData.note}"`;
+    if (yesterdayData.skippedTasks && yesterdayData.skippedTasks.length) yesterdaySummary += ` Unfinished tasks to carry forward: ${yesterdayData.skippedTasks.map(t=>t.text).join('; ')}.`;
+    if (yesterdayData.outliers && yesterdayData.outliers.length) yesterdaySummary += ` Yesterday's disruptions: ${[].concat(yesterdayData.outliers).join(', ')}.`;
+  }
+
+  const prompt = `You are a daily productivity planner for Sheffie Robinson, a clinical sociologist specializing in workforce and economic development.
+
+Her active priorities:
+1. GENIE (Georgia Southern) — Director of Business Incubation. Solo until July. Part-timers in Hinesville, Statesboro, Metter.
+2. Shamrck — AI entrepreneurship platform. Needs SuiteDash stabilization, 2-3 business customers for $1,100 WASC accreditation fee, NSF Phase II prep by November.
+3. Robin Harris — Early stage, analyzing Augusta tax sale properties for duplex investment. Family handles labor.
+4. Leatherback Labs — FROZEN until July. Do not assign tasks here.
+5. Personal — Gym 3x/week target, toddler (drop-off 7:30am, pickup 4:30pm), 11-year-old with little league.
+
+TODAY: ${today.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}
+Day context: ${DAY_CTX[today.getDay()]}
+Civic events today: ${civic.length ? civic.join(', ') : 'None'}
+Today's outliers/disruptions: ${outlierTxt}
+${yesterdaySummary}
+
+Generate 6-8 specific actionable tasks. Rules:
+- Include up to 2 carried-over unfinished tasks if there are any (mark carriedFrom: true)
+- Be realistic — she has a toddler, demanding day job, and limited evening bandwidth
+- If civic events are tonight, weight morning tasks heavier
+- Balance across her priorities — don't over-index on one area
+- Each task should be completable in one sitting
+
+Respond ONLY with a JSON array, no markdown, no explanation:
+[{"text":"task description","tag":"genie|shamrck|robin|civic|personal","carriedFrom":false}]`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'Return only valid JSON arrays. No markdown, no backticks, no explanation.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '[]';
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+
+    const inserted = [];
+    for (const t of parsed) {
+      try {
+        const rows = await db('tasks', 'POST', {
+          date: todayKey(), text: t.text,
+          tag: t.tag || 'genie', done: false,
+          carried_from: t.carriedFrom || false
+        });
+        if (rows && rows[0]) inserted.push(rows[0]);
+      } catch(e) {}
+    }
+    tasks = inserted;
+    renderTasks();
+    updateProgress();
+    showToast(yesterdayData ? 'Plan built from yesterday\'s review' : 'Today\'s plan generated');
+  } catch(e) { showToast('Could not generate plan — check API key'); console.error(e); }
+}
+
+async function renderWeekly() {
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let checkins = {};
+  try {
+    const start = monday.toISOString().split('T')[0];
+    const end = new Date(monday.getTime() + 6*86400000).toISOString().split('T')[0];
+    const rows = await db(`checkins?date=gte.${start}&date=lte.${end}`);
+    (rows||[]).forEach(r => { checkins[r.date] = r; });
+  } catch(e) {}
+
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const key = d.toISOString().split('T')[0];
+    const c = checkins[key];
+    const isToday = d.toDateString() === today.toDateString();
+    const pct = c ? c.pct : (isToday ? Math.round((tasks.filter(t=>t.done).length/Math.max(tasks.length,1))*100) : 0);
+    html += `<div class="week-day-card ${isToday?'today':''}">
+      <div class="week-day-name">${days[i]}</div>
+      <div class="week-day-num">${d.getDate()}</div>
+      <div class="week-bar-wrap"><div class="week-bar" style="height:${pct}%"></div></div>
+      <div class="week-pct">${pct}%</div>
+      ${c ? `<div style="font-size:16px;margin-top:4px;">${c.mood}</div>` : ''}
+    </div>`;
+  }
+  document.getElementById('weekGrid').innerHTML = html;
+
+  const start = monday.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const end = new Date(monday.getTime()+6*86400000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('weekRange').textContent = start + ' – ' + end;
+
+  const tagColors = { genie:'#185FA5', shamrck:'#534AB7', robin:'#1D9E75', civic:'#D85A30', personal:'#C9922A', outlier:'#888' };
+  const tagNames = { genie:'GENIE', shamrck:'Shamrck', robin:'Robin Harris', civic:'Civic', personal:'Personal', outlier:'Outlier' };
+  const counts = {};
+  tasks.forEach(t => {
+    if (!counts[t.tag]) counts[t.tag] = { total:0, done:0 };
+    counts[t.tag].total++;
+    if (t.done) counts[t.tag].done++;
+  });
+  const bal = Object.entries(counts).map(([tag,c]) => {
+    const p = Math.round((c.done/Math.max(c.total,1))*100);
+    return `<div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:13px;font-weight:500;color:${tagColors[tag]||'#888'}">${tagNames[tag]||tag}</span>
+        <span style="font-size:12px;color:var(--text-muted)">${c.done}/${c.total}</span>
+      </div>
+      <div style="height:6px;background:var(--gray-200);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${p}%;background:${tagColors[tag]||'#888'};border-radius:3px;transition:width 0.5s;"></div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('weekBalance').innerHTML = bal || '<div class="empty-state">Complete some tasks to see your balance.</div>';
+}
+
+async function renderGoals() {
+  try { await loadGoals(); } catch(e) {}
+  document.getElementById('goalGrid').innerHTML = GOALS_DEF.map(g => {
+    const prog = goalProgress[g.id] || 0;
+    const pct = Math.min(100, Math.round((prog/g.target)*100));
+    return `<div class="goal-card">
+      <div class="goal-header">
+        <div class="goal-name">${g.name}</div>
+        <span class="goal-badge" style="background:${g.bg};color:${g.color}">${g.cat==='genie'?'GENIE':g.cat.charAt(0).toUpperCase()+g.cat.slice(1)}</span>
+      </div>
+      <div class="goal-bar"><div class="goal-fill" style="width:${pct}%;background:${g.color};"></div></div>
+      <div class="goal-detail">
+        <span>${prog} / ${g.target} ${g.unit}</span>
+        <span style="font-weight:500;color:${g.color}">${pct}%</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <input type="number" id="gi-${g.id}" placeholder="Update progress" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--gray-200);font-size:13px;font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--text);outline:none;" />
+        <button class="btn btn-outline" style="font-size:12px;padding:6px 10px;" onclick="updateGoal('${g.id}')">Save</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateGoal(id) {
+  const val = parseFloat(document.getElementById('gi-'+id).value);
+  if (isNaN(val)) return;
+  goalProgress[id] = val;
+  setSaving(true);
+  try {
+    await db(`goals?id=eq.${id}`, 'PATCH', { progress: val, updated_at: new Date().toISOString() });
+    setSaving(false); renderGoals(); showToast('Goal updated');
+  } catch(e) { showToast('Could not save goal'); setSaving(false); }
+}
+
+async function renderHistory() {
+  const list = document.getElementById('historyList');
+  list.innerHTML = '<div class="empty-state">Loading...</div>';
+  try {
+    const rows = await db('checkins?order=date.desc&limit=90');
+    if (!rows || !rows.length) { list.innerHTML = '<div class="empty-state">No history yet. Complete your first evening review.</div>'; return; }
+    document.getElementById('historyCount').textContent = rows.length + ' day' + (rows.length!==1?'s':'') + ' of history';
+    list.innerHTML = rows.map(e => {
+      const d = new Date(e.date + 'T12:00:00');
+      return `<div class="history-item">
+        <div class="history-date-block">
+          <div class="history-date-num">${d.getDate()}</div>
+          <div class="history-date-mon">${d.toLocaleDateString('en-US',{month:'short'})}</div>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:13px;font-weight:500;">${d.toLocaleDateString('en-US',{weekday:'long'})}</span>
+            <span style="font-size:12px;color:var(--text-muted)">${e.done}/${e.total} tasks</span>
+          </div>
+          <div class="history-bar"><div class="history-fill" style="width:${e.pct}%"></div></div>
+          ${e.note ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;font-style:italic;">"${e.note.substring(0,100)}${e.note.length>100?'...':''}"</div>` : ''}
+          ${e.skipped_tasks && e.skipped_tasks.length ? `<div style="font-size:11px;color:var(--coral);margin-top:4px;">&#8593; ${e.skipped_tasks.length} carried forward</div>` : ''}
+          ${e.outliers && e.outliers.length ? `<div style="font-size:11px;color:var(--gold);margin-top:2px;">&#9888; ${[].concat(e.outliers).join(', ')}</div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="font-size:13px;font-weight:500;color:var(--navy)">${e.pct}%</div>
+          <div style="font-size:18px;">${e.mood}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML = '<div class="empty-state">Could not load history.</div>'; }
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'weekly') renderWeekly();
+  if (name === 'goals') renderGoals();
+  if (name === 'history') renderHistory();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+init();
+</script>
+</body>
+</html>
